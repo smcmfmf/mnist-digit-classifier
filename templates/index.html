@@ -1,0 +1,354 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>MNIST Digit Classifier (Draw)</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    /* --- ✨ 전역 스타일 --- */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      max-width: 900px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      font-size: 2.2em;
+      letter-spacing: -0.5px;
+    }
+
+    /* --- 캔버스 및 도구 스타일 --- */
+    .canvas-wrap {
+      display: grid;
+      gap: 30px;
+      grid-template-columns: 280px 1fr;
+      align-items: start;
+    }
+
+    canvas#board {
+      border: 1px solid #e0e0e0;
+      touch-action: none;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 15px;
+    }
+
+    .tools label {
+      font-size: 0.95em;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tools input[type="range"] {
+      width: 100px;
+      accent-color: #3498db;
+    }
+
+    .tools button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95em;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      font-weight: 500;
+    }
+
+    #clear {
+      background-color: #ecf0f1;
+      color: #34495e;
+    }
+
+    #clear:hover {
+      background-color: #e0e0e0;
+      transform: translateY(-1px);
+    }
+
+    #predict {
+      background-color: #3498db;
+      color: white;
+    }
+
+    #predict:hover {
+      background-color: #2980b9;
+      transform: translateY(-1px);
+    }
+
+    .result {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.2em;
+      color: #27ae60;
+    }
+
+    /* --- 정보 영역 스타일 --- */
+    .canvas-wrap > div:last-child p {
+      font-size: 1.05em;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .canvas-wrap > div:last-child p b {
+      color: #e74c3c;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    ul li {
+      position: relative;
+      padding-left: 25px;
+      margin-bottom: 10px;
+      color: #666;
+    }
+
+    ul li::before {
+      content: '✔';
+      color: #3498db;
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    /* --- ✨ Chart.js 그래프 컨테이너 스타일 --- */
+    #chart-container {
+      margin-top: 25px;
+      max-width: 400px;
+      padding: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #fdfdfd;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>MNIST 손글씨 숫자 인식 (그려서 예측)</h1>
+
+    <div class="canvas-wrap">
+      <div>
+        <canvas id="board" width="280" height="280"></canvas>
+
+        <div class="tools">
+          <label>
+            펜 굵기
+            <input id="size" type="range" min="8" max="40" value="24" />
+          </label>
+          <button id="clear" type="button">지우기</button>
+          <button id="predict" type="button">예측하기</button>
+        </div>
+
+        <div class="result" id="result"></div>
+
+        <div id="chart-container">
+          <canvas id="probChart"></canvas>
+        </div>
+      </div>
+
+      <div>
+        <p>마우스/터치로 캔버스에 <b>진하게</b> 숫자를 그린 뒤 “예측하기”를 눌러보세요.</p>
+        <ul>
+          <li>배경은 흰색, 글씨는 검정색으로 전송됩니다.</li>
+          <li>서버에서 28×28로 전처리 후 모델에 입력합니다.</li>
+          <li>가장 높은 확률을 가진 숫자는 차트에서 강조됩니다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const sizeEl = document.getElementById('size');
+    const clearBtn = document.getElementById('clear');
+    const predictBtn = document.getElementById('predict');
+    const resultEl = document.getElementById('result');
+    const chartEl = document.getElementById('probChart');
+
+    let probChart = null;
+
+    // 초기 설정: 흰 배경
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#000';
+
+    let drawing = false;
+    let last = null;
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches && e.touches[0]) {
+        return {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top
+        };
+      }
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    function start(e) {
+      drawing = true;
+      ctx.lineWidth = Number(sizeEl.value);
+      last = getPos(e);
+    }
+
+    function move(e) {
+      if (!drawing) return;
+      const p = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+      e.preventDefault();
+    }
+
+    function end() {
+      drawing = false;
+      last = null;
+    }
+
+    // 마우스
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+
+    // 터치
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+
+    clearBtn.addEventListener('click', () => {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000';
+      resultEl.textContent = '';
+      if (probChart) probChart.destroy();
+    });
+
+    predictBtn.addEventListener('click', async () => {
+      resultEl.textContent = '예측 중...';
+      if (probChart) probChart.destroy();
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      const fd = new FormData();
+      fd.append('file', blob, 'drawn.png');
+
+      try {
+        const r = await fetch('/predict', { method: 'POST', body: fd });
+        const j = await r.json();
+
+        if (j.error) {
+          resultEl.textContent = '에러: ' + j.error;
+        } else {
+          resultEl.textContent = `예측: ${j.digit} (확률 ${(j.prob * 100).toFixed(2)}%)`;
+
+          if (j.probs && j.probs.length === 10) {
+            drawChart(j.probs, j.digit);
+          }
+        }
+      } catch (e) {
+        resultEl.textContent = '네트워크 에러';
+      }
+    });
+
+    // ✅ Chart.js 그래프 출력 함수
+    function drawChart(probs, predictedDigit) {
+      const labels = [...Array(10).keys()];
+      const backgroundColors = probs.map((_, index) =>
+        index === predictedDigit ? '#e74c3c' : '#4a90e2'
+      );
+      const borderColors = probs.map((_, index) =>
+        index === predictedDigit ? '#c0392b' : '#307cd0'
+      );
+
+      const data = {
+        labels: labels,
+        datasets: [{
+          label: '예측 확률 (%)',
+          data: probs.map(p => (p * 100).toFixed(2)),
+          backgroundColor: backgroundColors,
+          borderColor: borderColors,
+          borderWidth: 1,
+          borderRadius: 5,
+          hoverBackgroundColor: backgroundColors.map(color =>
+            color === '#e74c3c' ? '#c0392b' : '#307cd0'
+          ),
+          hoverBorderColor: borderColors,
+        }]
+      };
+
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            grid: { display: false },
+            ticks: { callback: v => v + '%', color: '#666' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#666' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            callbacks: {
+              title: context => `숫자 ${context[0].label}`,
+              label: context => `확률: ${context.raw}%`
+            }
+          }
+        }
+      };
+
+      probChart = new Chart(chartEl, { type: 'bar', data, options });
+    }
+  </script>
+</body>
+</html>
