@@ -3,12 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <title>MNIST Digit Classifier (Draw)</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  
   <style>
-    /* --- ✨ 전역 스타일 --- */
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f0f2f5;
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #f7fafc;
+      background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23e9edf2' fill-opacity='0.5' fill-rule='evenodd'%3E%3Cpath d='M0 0h1v1H0V0zm1 1h1v1H1V1zm2 0h1v1H3V1zm0 2h1v1H3V3zm2 0h1v1H5V3zm0 2h1v1H5V5zm0 0h1v1H5V5zm3 0h1v1H3V5z'/%3E%3C/g%3E%3C/svg%3E");
       color: #333;
       line-height: 1.6;
       margin: 0;
@@ -21,45 +25,47 @@
     }
 
     .container {
-      background-color: #ffffff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-      max-width: 900px;
+      background-color: #eefacc; 
+      padding: 45px; 
+      border-radius: 20px; 
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1); 
+      max-width: 1000px; 
       width: 100%;
       box-sizing: border-box;
     }
 
     h1 {
       text-align: center;
-      color: #2c3e50;
-      margin-bottom: 30px;
+      color: #3b4249;
+      margin-bottom: 35px;
       font-size: 2.2em;
-      letter-spacing: -0.5px;
+      font-weight: 700;
+      letter-spacing: -0.8px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e0e4e8;
     }
 
-    /* --- 캔버스 및 도구 스타일 --- */
     .canvas-wrap {
       display: grid;
-      gap: 30px;
-      grid-template-columns: 280px 1fr;
+      gap: 50px;
+      grid-template-columns: auto 1fr;
       align-items: start;
     }
 
     canvas#board {
-      border: 1px solid #e0e0e0;
+      border: 1px solid #e0e4e8;
       touch-action: none;
       background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      border-radius: 12px; 
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     }
 
     .tools {
       display: flex;
-      gap: 10px;
+      gap: 15px;
       flex-wrap: wrap;
       align-items: center;
-      margin-top: 15px;
+      margin-top: 25px;
     }
 
     .tools label {
@@ -71,91 +77,129 @@
     }
 
     .tools input[type="range"] {
-      width: 100px;
-      accent-color: #3498db;
+      width: 120px;
+      accent-color: #8ed1b8; 
     }
 
     .tools button {
-      padding: 10px 18px;
+      padding: 11px 22px;
       border: none;
-      border-radius: 6px;
+      border-radius: 9px;
       cursor: pointer;
-      font-size: 0.95em;
-      transition: background-color 0.2s ease, transform 0.1s ease;
+      font-size: 1em;
+      transition: all 0.2s ease;
       font-weight: 500;
+      font-family: 'Noto Sans KR', sans-serif;
+      letter-spacing: 0.2px;
     }
 
     #clear {
-      background-color: #ecf0f1;
-      color: #34495e;
+      background-color: #fde6b5; 
+      color: #7a6e4e;
+      box-shadow: 0 3px 10px rgba(255, 248, 225, 0.3);
     }
 
     #clear:hover {
-      background-color: #e0e0e0;
-      transform: translateY(-1px);
+      background-color: #fde6b5;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 230, 160, 0.4);
     }
 
     #predict {
-      background-color: #3498db;
+      background-color: #887aaa; 
       color: white;
+      box-shadow: 0 4px 15px rgba(177, 155, 206, 0.5);
     }
 
     #predict:hover {
-      background-color: #2980b9;
-      transform: translateY(-1px);
+      background-color: #aa99d3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(215, 188, 250, 0.5);
     }
 
     .result {
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 1.2em;
-      color: #27ae60;
+      margin-top: 30px;
+      font-size: 1.3em;
+      font-weight: 500;
+      color: #4a4e69;
+      height: 2.5em; 
+      display: flex;
+      align-items: center;
+    }
+    
+    .result .predicted-digit {
+      font-weight: 700;
+      font-size: 2em;
+      color: #ff8a80; 
+      margin: 0 10px;
+    }
+    .result .predicted-prob {
+      font-size: 0.95em;
+      color: #7a7a7a;
     }
 
-    /* --- 정보 영역 스타일 --- */
-    .canvas-wrap > div:last-child p {
+    #chart-container {
+      margin-top: 0;
+      max-width: 480px;
+      padding: 25px;
+      border: 1px solid #e0e4e8;
+      border-radius: 12px; 
+      background-color: #fffcf8;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      height: 280px; 
+      display: flex; 
+      align-items: center;
+      justify-content: center;
+    }
+
+    #chart-container canvas {
+        height: 100% !important; 
+        width: 100% !important;
+    }
+    
+    .instructions-wrap {
+        margin-top: 20px;
+        padding-top: 30px; 
+        border-top: 1px solid #e0e4e8;
+    }
+    
+    .instructions-wrap p {
       font-size: 1.05em;
-      color: #555;
-      margin-bottom: 20px;
+      color: #5a5a5a;
+      margin-bottom: 25px;
     }
 
-    .canvas-wrap > div:last-child p b {
-      color: #e74c3c;
+    .instructions-wrap p b {
+      color: #ff8a80; 
     }
 
-    ul {
+    .instructions-wrap ul {
       list-style: none;
       padding: 0;
       margin-top: 20px;
     }
 
-    ul li {
+    .instructions-wrap ul li {
       position: relative;
-      padding-left: 25px;
-      margin-bottom: 10px;
+      padding-left: 28px;
+      margin-bottom: 12px;
       color: #666;
+      line-height: 1.5;
     }
 
-    ul li::before {
+    .instructions-wrap ul li::before {
       content: '✔';
-      color: #3498db;
+
+      color: #8ed1b8; 
       position: absolute;
       left: 0;
       font-weight: bold;
-    }
-
-    /* --- ✨ Chart.js 그래프 컨테이너 스타일 --- */
-    #chart-container {
-      margin-top: 25px;
-      max-width: 400px;
-      padding: 15px;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      background-color: #fdfdfd;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      font-size: 1.1em;
+      top: -2px;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.0.0/chartjs-plugin-datalabels.min.js"></script>
 </head>
 
 <body>
@@ -163,6 +207,7 @@
     <h1>MNIST 손글씨 숫자 인식 (그려서 예측)</h1>
 
     <div class="canvas-wrap">
+      
       <div>
         <canvas id="board" width="280" height="280"></canvas>
 
@@ -176,24 +221,28 @@
         </div>
 
         <div class="result" id="result"></div>
+      </div>
 
+      <div>
         <div id="chart-container">
           <canvas id="probChart"></canvas>
         </div>
       </div>
 
-      <div>
+    </div> 
+    <div class="instructions-wrap">
         <p>마우스/터치로 캔버스에 <b>진하게</b> 숫자를 그린 뒤 “예측하기”를 눌러보세요.</p>
         <ul>
           <li>배경은 흰색, 글씨는 검정색으로 전송됩니다.</li>
           <li>서버에서 28×28로 전처리 후 모델에 입력합니다.</li>
           <li>가장 높은 확률을 가진 숫자는 차트에서 강조됩니다.</li>
         </ul>
-      </div>
     </div>
-  </div>
 
+  </div> 
   <script>
+    Chart.register(ChartDataLabels);
+
     const canvas = document.getElementById('board');
     const ctx = canvas.getContext('2d');
     const sizeEl = document.getElementById('size');
@@ -204,7 +253,6 @@
 
     let probChart = null;
 
-    // 초기 설정: 흰 배경
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round';
@@ -261,7 +309,7 @@
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#000';
-      resultEl.textContent = '';
+      resultEl.innerHTML = ''; 
       if (probChart) probChart.destroy();
     });
 
@@ -280,7 +328,7 @@
         if (j.error) {
           resultEl.textContent = '에러: ' + j.error;
         } else {
-          resultEl.textContent = `예측: ${j.digit} (확률 ${(j.prob * 100).toFixed(2)}%)`;
+          resultEl.innerHTML = `예측: <span class="predicted-digit">${j.digit}</span> <span class="predicted-prob">(확률 ${(j.prob * 100).toFixed(2)}%)</span>`;
 
           if (j.probs && j.probs.length === 10) {
             drawChart(j.probs, j.digit);
@@ -288,17 +336,23 @@
         }
       } catch (e) {
         resultEl.textContent = '네트워크 에러';
+        console.error(e); 
       }
     });
 
-    // ✅ Chart.js 그래프 출력 함수
     function drawChart(probs, predictedDigit) {
       const labels = [...Array(10).keys()];
+
+      const predictedColor = '#ffb3ba';
+      const defaultColor = '#c1dbe3';
+      const predictedBorder = '#ff8a80';
+      const defaultBorder = '#a0c4ff';
+
       const backgroundColors = probs.map((_, index) =>
-        index === predictedDigit ? '#e74c3c' : '#4a90e2'
+        index === predictedDigit ? predictedColor : defaultColor
       );
       const borderColors = probs.map((_, index) =>
-        index === predictedDigit ? '#c0392b' : '#307cd0'
+        index === predictedDigit ? predictedBorder : defaultBorder
       );
 
       const data = {
@@ -308,10 +362,10 @@
           data: probs.map(p => (p * 100).toFixed(2)),
           backgroundColor: backgroundColors,
           borderColor: borderColors,
-          borderWidth: 1,
+          borderWidth: 1.5, 
           borderRadius: 5,
-          hoverBackgroundColor: backgroundColors.map(color =>
-            color === '#e74c3c' ? '#c0392b' : '#307cd0'
+          hoverBackgroundColor: probs.map((_, index) =>
+            index === predictedDigit ? predictedBorder : defaultBorder
           ),
           hoverBorderColor: borderColors,
         }]
@@ -319,7 +373,7 @@
 
       const options = {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: false, 
         scales: {
           y: {
             beginAtZero: true,
@@ -342,6 +396,21 @@
             callbacks: {
               title: context => `숫자 ${context[0].label}`,
               label: context => `확률: ${context.raw}%`
+            }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            formatter: (value) => value + '%',
+            font: {
+              weight: 'bold',
+              size: 10
+            },
+            color: function(context) {
+                const dataset = context.dataset;
+                const value = dataset.data[context.dataIndex];
+                const predicted = dataset.data[predictedDigit];
+                return value === predicted ? '#d9534f' : '#5a5a5a'; 
             }
           }
         }
